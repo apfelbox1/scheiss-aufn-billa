@@ -214,7 +214,6 @@ function normalizeStreak(input) {
 
 function normalizeSettings(input) {
     const out = (input && typeof input === "object") ? { ...input } : {};
-    console.log("Normalizing settings", out);
     return {
         firstDayOfWeek: (out.firstDayOfWeek === 1) ? 1 : 0
     };
