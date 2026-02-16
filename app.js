@@ -1,7 +1,7 @@
 const $ = (id) => document.getElementById(id);
 
-const STORAGE_KEY = "nobilla-counter:v2";
-const LEGACY_STORAGE_KEYS = ["tschick-counter:v1"];
+const STORAGE_KEY = "nobilla-counter:v3";
+const LEGACY_STORAGE_KEYS = ["nobilla-counter:v2", "tschick-counter:v1"];
 
 const DEFAULT_STATE = {
     streak: {

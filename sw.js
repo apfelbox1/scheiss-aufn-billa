@@ -1,4 +1,4 @@
-const CACHE = "tscheissaufnbilla-counter-v1";
+const CACHE = "tscheissaufnbilla-counter-v2";
 const ASSETS = [
     "./",
     "./index.html",
