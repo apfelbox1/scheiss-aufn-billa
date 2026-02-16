@@ -42,6 +42,7 @@ body {
     position: sticky;
     top: 0;
     z-index: 20;
+    -webkit-backdrop-filter: blur(6px);    
     backdrop-filter: blur(6px);
     background: linear-gradient(180deg, rgba(255, 211, 47, .95), rgba(255, 197, 22, .92));
     border-bottom-left-radius: 50% 42px;
@@ -504,6 +505,7 @@ canvas {
     border: 1px solid var(--line);
     border-radius: 18px;
     background: rgba(255, 255, 255, .96);
+    -webkit-backdrop-filter: blur(14px);
     backdrop-filter: blur(14px);
     box-shadow: var(--shadow);
 }
