@@ -747,8 +747,6 @@ window.addEventListener("load", () => {
 
         firstDayOfWeekSelect.addEventListener("change", (e) => {
             const value = Number(e.target.value);
-            console.log("First day of week change", value);
-            console.log("Current settings before change", state);
             if (value === 0 || value === 1) {
                 state.settings.firstDayOfWeek = value;
                 saveState();
