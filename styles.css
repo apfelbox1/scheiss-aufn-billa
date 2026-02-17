@@ -42,6 +42,7 @@ body {
     position: sticky;
     top: 0;
     z-index: 20;
+    -webkit-backdrop-filter: blur(6px);    
     backdrop-filter: blur(6px);
     background: linear-gradient(180deg, rgba(255, 211, 47, .95), rgba(255, 197, 22, .92));
     border-bottom-left-radius: 50% 42px;
@@ -471,6 +472,19 @@ textarea {
     font: inherit;
 }
 
+select {
+    border: 1px solid var(--line);
+    background: rgba(255, 255, 255, .94);
+    color: var(--text);
+    border-radius: 12px;
+    padding: 10px 12px;
+    font: inherit;
+    appearance: none;
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px;
+}
+
 .file {
     position: relative;
     overflow: hidden;
@@ -504,6 +518,7 @@ canvas {
     border: 1px solid var(--line);
     border-radius: 18px;
     background: rgba(255, 255, 255, .96);
+    -webkit-backdrop-filter: blur(14px);
     backdrop-filter: blur(14px);
     box-shadow: var(--shadow);
 }

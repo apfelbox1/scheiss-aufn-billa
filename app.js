@@ -1,7 +1,7 @@
 const $ = (id) => document.getElementById(id);
 
-const STORAGE_KEY = "nobilla-counter:v2";
-const LEGACY_STORAGE_KEYS = ["tschick-counter:v1"];
+const STORAGE_KEY = "nobilla-counter:v3";
+const LEGACY_STORAGE_KEYS = ["nobilla-counter:v2", "tschick-counter:v1"];
 
 const DEFAULT_STATE = {
     streak: {
@@ -12,7 +12,10 @@ const DEFAULT_STATE = {
         lastTickDate: null // YYYY-MM-DD
     },
     achievementUnlocks: {}, // { [achievementId]: ISO datetime }
-    lastAction: null
+    lastAction: null,
+    settings: {
+        firstDayOfWeek: 0 // 0 = Sunday, 1 = Monday
+    }
 };
 
 const ACHIEVEMENTS = [
@@ -209,12 +212,20 @@ function normalizeStreak(input) {
     };
 }
 
+function normalizeSettings(input) {
+    const out = (input && typeof input === "object") ? { ...input } : {};
+    return {
+        firstDayOfWeek: (out.firstDayOfWeek === 1) ? 1 : 0
+    };
+}
+
 function normalizeState(input) {
     const out = (input && typeof input === "object") ? { ...input } : {};
     return {
         streak: normalizeStreak(out.streak),
         achievementUnlocks: normalizeAchievementUnlocks(out.achievementUnlocks),
-        lastAction: null
+        lastAction: null,
+        settings: normalizeSettings(out.settings)
     };
 }
 
@@ -330,6 +341,11 @@ function resetWeekdayStats() {
         const dt = new Date(event.at);
         if (!Number.isFinite(dt.getTime())) continue;
         counts[dt.getDay()].count += 1;
+    }
+
+    if (state.settings.firstDayOfWeek === 1) {
+        // Rotate so that Monday is first
+        counts.push(counts.shift());
     }
 
     return counts;
@@ -720,6 +736,20 @@ window.addEventListener("load", () => {
                 alert("Import erfolgreich.");
             } catch (err) {
                 alert("Import fehlgeschlagen: " + (err?.message || String(err)));
+            }
+        });
+    }
+
+    const firstDayOfWeekSelect = $("firstDayOfWeek");
+    if (firstDayOfWeekSelect) {
+        firstDayOfWeekSelect.value = String(state.settings?.firstDayOfWeek || 0);
+
+        firstDayOfWeekSelect.addEventListener("change", (e) => {
+            const value = Number(e.target.value);
+            if (value === 0 || value === 1) {
+                state.settings.firstDayOfWeek = value;
+                saveState();
+                render();
             }
         });
     }
