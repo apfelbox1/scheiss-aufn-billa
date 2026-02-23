@@ -14,7 +14,8 @@ const DEFAULT_STATE = {
     achievementUnlocks: {}, // { [achievementId]: ISO datetime }
     lastAction: null,
     settings: {
-        firstDayOfWeek: 0 // 0 = Sunday, 1 = Monday
+        firstDayOfWeek: 0, // 0 = Sunday, 1 = Monday
+        lewakasCaptchaEnabled: false
     }
 };
 
@@ -104,6 +105,17 @@ const RELAPSE_SNACKBAR_LINES = [
     "Aber dann wieder auf r/scheissaufnbilla, ge?",
 ];
 
+const LEWAKAS_CAPTCHA_TILE_COUNT = 9;
+const LEWAKAS_CAPTCHA_MANIFEST_PATH = "img/captcha/lewakas/manifest.json";
+const LEWAKAS_CAPTCHA_FALSE_PREFIX = "ned-";
+const LEWAKAS_CAPTCHA_FAIL_LINES = [
+    "Heast, des war ka Lewakas. No amoi.",
+    "Na geeeh, da hat di da Gusto verarscht.",
+    "Falscher Griff ins Semmerl-Regal. Versuch's nochmal.",
+    "Oida, so schaut ka echter Lewakas aus."
+];
+const LEWAKAS_CAPTCHA_MANIFEST_ERROR = "Lewakas-Captcha fehlt/ist ungültig. Ich lass di diesmal durch.";
+
 function todayISO() {
     const now = new Date();
     const y = now.getFullYear();
@@ -140,6 +152,86 @@ function formatDuration(ms) {
     if (m > 0) parts.push(`${m} Min`);
     if (d === 0 && h === 0 && m === 0) parts.push(`${s} Sek`);
     return parts.slice(0, 2).join(" ");
+}
+
+function randomInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function randomFrom(list, fallback = null) {
+    if (!Array.isArray(list) || list.length === 0) return fallback;
+    return list[Math.floor(Math.random() * list.length)];
+}
+
+function shuffled(list) {
+    const out = [...list];
+    for (let i = out.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [out[i], out[j]] = [out[j], out[i]];
+    }
+    return out;
+}
+
+function uniqueNonEmptyStrings(input) {
+    if (!Array.isArray(input)) return [];
+    const out = [];
+    const seen = new Set();
+    for (const item of input) {
+        if (typeof item !== "string") continue;
+        const value = item.trim();
+        if (!value || seen.has(value)) continue;
+        seen.add(value);
+        out.push(value);
+    }
+    return out;
+}
+
+function joinPath(basePath, entryPath) {
+    if (!entryPath) return "";
+    if (/^(?:[a-z]+:)?\/\//i.test(entryPath)) return entryPath;
+    if (entryPath.startsWith("/") || entryPath.startsWith("./") || entryPath.startsWith("../")) return entryPath;
+    const base = (basePath || "").replace(/\/+$/, "");
+    return base ? `${base}/${entryPath.replace(/^\/+/, "")}` : entryPath;
+}
+
+function captchaTypeFromPath(entryPath) {
+    const normalized = String(entryPath || "").toLowerCase();
+    const name = normalized.split("/").pop() || "";
+    if (normalized.includes("/fake/")) return "fake";
+    if (normalized.includes("/real/")) return "real";
+    return name.startsWith(LEWAKAS_CAPTCHA_FALSE_PREFIX) ? "fake" : "real";
+}
+
+function normalizeLewakasCaptchaManifest(manifest) {
+    const obj = (manifest && typeof manifest === "object") ? manifest : {};
+    const basePath = (typeof obj.basePath === "string" && obj.basePath.trim())
+        ? obj.basePath.trim()
+        : "img/captcha/lewakas";
+
+    const real = [];
+    const fake = [];
+
+    for (const path of uniqueNonEmptyStrings(obj.real)) {
+        real.push(joinPath(basePath, path));
+    }
+
+    for (const path of uniqueNonEmptyStrings(obj.fake)) {
+        fake.push(joinPath(basePath, path));
+    }
+
+    for (const path of uniqueNonEmptyStrings(obj.files)) {
+        const fullPath = joinPath(basePath, path);
+        if (captchaTypeFromPath(path) === "fake") {
+            fake.push(fullPath);
+        } else {
+            real.push(fullPath);
+        }
+    }
+
+    return {
+        real: uniqueNonEmptyStrings(real),
+        fake: uniqueNonEmptyStrings(fake)
+    };
 }
 
 function normalizeRelapseEvents(input) {
@@ -215,7 +307,8 @@ function normalizeStreak(input) {
 function normalizeSettings(input) {
     const out = (input && typeof input === "object") ? { ...input } : {};
     return {
-        firstDayOfWeek: (out.firstDayOfWeek === 1) ? 1 : 0
+        firstDayOfWeek: (out.firstDayOfWeek === 1) ? 1 : 0,
+        lewakasCaptchaEnabled: out.lewakasCaptchaEnabled === true
     };
 }
 
@@ -546,6 +639,16 @@ function render() {
 
     $("undoHint").textContent = state.lastAction ? "Undo verfügbar." : "—";
 
+    const firstDayOfWeekSelect = $("firstDayOfWeek");
+    if (firstDayOfWeekSelect && document.activeElement !== firstDayOfWeekSelect) {
+        firstDayOfWeekSelect.value = String(state.settings?.firstDayOfWeek || 0);
+    }
+
+    const lewakasCaptchaToggle = $("lewakasCaptchaEnabled");
+    if (lewakasCaptchaToggle && document.activeElement !== lewakasCaptchaToggle) {
+        lewakasCaptchaToggle.checked = Boolean(state.settings?.lewakasCaptchaEnabled);
+    }
+
     renderRecentAchievements();
     renderAllAchievements();
     renderProgressToNextPoint();
@@ -579,6 +682,279 @@ function showUndoSnackbar() {
         snackbar.classList.remove("show");
         snackbarTimer = null;
     }, 5000);
+}
+
+async function ensureLewakasCaptchaPoolLoaded() {
+    if (lewakasCaptchaPool.real.length > 0 && lewakasCaptchaPool.fake.length > 0) return true;
+    if (lewakasCaptchaPoolLoadPromise) return lewakasCaptchaPoolLoadPromise;
+
+    lewakasCaptchaPoolLoadPromise = (async () => {
+        try {
+            const response = await fetch(LEWAKAS_CAPTCHA_MANIFEST_PATH, { cache: "no-store" });
+            if (!response.ok) return false;
+
+            const manifest = await response.json();
+            const normalized = normalizeLewakasCaptchaManifest(manifest);
+            if (normalized.real.length === 0 || normalized.fake.length === 0) return false;
+
+            lewakasCaptchaPool = normalized;
+            return true;
+        } catch {
+            return false;
+        } finally {
+            lewakasCaptchaPoolLoadPromise = null;
+        }
+    })();
+
+    return lewakasCaptchaPoolLoadPromise;
+}
+
+function createLewakasCaptchaChallenge() {
+    const realPool = lewakasCaptchaPool.real;
+    const fakePool = lewakasCaptchaPool.fake;
+    if (realPool.length === 0 || fakePool.length === 0) return null;
+
+    const realCount = randomInt(2, 4);
+    const wrongCount = Math.max(1, LEWAKAS_CAPTCHA_TILE_COUNT - realCount);
+    const tiles = [];
+
+    for (let i = 0; i < realCount; i += 1) {
+        tiles.push({
+            isReal: true,
+            src: randomFrom(realPool),
+            fallbackLabel: "Lewakas"
+        });
+    }
+
+    for (let i = 0; i < wrongCount; i += 1) {
+        tiles.push({
+            isReal: false,
+            src: randomFrom(fakePool),
+            fallbackLabel: "Ned"
+        });
+    }
+
+    const mixedTiles = shuffled(tiles).slice(0, LEWAKAS_CAPTCHA_TILE_COUNT);
+    const correctIndexes = new Set();
+    mixedTiles.forEach((tile, index) => {
+        if (tile.isReal) correctIndexes.add(index);
+    });
+
+    return {
+        tiles: mixedTiles,
+        correctIndexes,
+        selectedIndexes: new Set()
+    };
+}
+
+function setLewakasCaptchaError(text) {
+    const errorEl = $("lewakasCaptchaError");
+    if (!errorEl) return;
+    errorEl.textContent = text || "";
+}
+
+function renderLewakasCaptchaGrid() {
+    const grid = $("lewakasCaptchaGrid");
+    if (!grid || !activeLewakasCaptcha) return;
+
+    grid.innerHTML = "";
+
+    activeLewakasCaptcha.tiles.forEach((tile, index) => {
+        const tileBtn = document.createElement("button");
+        tileBtn.type = "button";
+        tileBtn.className = "captcha-tile";
+        tileBtn.setAttribute("aria-pressed", "false");
+        tileBtn.setAttribute("aria-label", `Captcha Bild ${index + 1}`);
+
+        const img = document.createElement("img");
+        img.alt = tile.isReal ? "Lewakas Bild" : "Anderes Bild";
+
+        const fallback = document.createElement("span");
+        fallback.className = "captcha-fallback";
+        fallback.textContent = tile.fallbackLabel;
+        fallback.hidden = true;
+
+        if (typeof tile.src === "string" && tile.src.length > 0) {
+            img.src = tile.src;
+            img.loading = "lazy";
+            img.decoding = "async";
+            img.addEventListener("error", () => {
+                img.hidden = true;
+                fallback.hidden = false;
+            });
+        } else {
+            img.hidden = true;
+            fallback.hidden = false;
+        }
+
+        tileBtn.appendChild(img);
+        tileBtn.appendChild(fallback);
+
+        tileBtn.addEventListener("click", () => {
+            const selected = activeLewakasCaptcha.selectedIndexes.has(index);
+            if (selected) {
+                activeLewakasCaptcha.selectedIndexes.delete(index);
+            } else {
+                activeLewakasCaptcha.selectedIndexes.add(index);
+            }
+
+            const nextState = !selected;
+            tileBtn.classList.toggle("selected", nextState);
+            tileBtn.setAttribute("aria-pressed", String(nextState));
+        });
+
+        grid.appendChild(tileBtn);
+    });
+}
+
+function refreshLewakasCaptcha(errorText = "") {
+    activeLewakasCaptcha = createLewakasCaptchaChallenge();
+    if (!activeLewakasCaptcha) return false;
+    renderLewakasCaptchaGrid();
+    setLewakasCaptchaError(errorText);
+    return true;
+}
+
+async function openLewakasCaptcha() {
+    const modal = $("lewakasCaptchaModal");
+    if (!modal) return false;
+
+    const loaded = await ensureLewakasCaptchaPoolLoaded();
+    if (!loaded) return false;
+
+    const challengeCreated = refreshLewakasCaptcha("");
+    if (!challengeCreated) return false;
+
+    modal.hidden = false;
+    const firstTile = modal.querySelector(".captcha-tile");
+    if (firstTile) firstTile.focus();
+    return true;
+}
+
+function closeLewakasCaptcha(cancelPendingAction = true) {
+    const modal = $("lewakasCaptchaModal");
+    if (modal) modal.hidden = true;
+    activeLewakasCaptcha = null;
+    setLewakasCaptchaError("");
+
+    if (cancelPendingAction) pendingProtectedAction = null;
+}
+
+function lewakasCaptchaSolved() {
+    if (!activeLewakasCaptcha) return false;
+    const selected = activeLewakasCaptcha.selectedIndexes;
+    const correct = activeLewakasCaptcha.correctIndexes;
+    if (selected.size !== correct.size) return false;
+
+    for (const index of selected) {
+        if (!correct.has(index)) return false;
+    }
+    return true;
+}
+
+function confirmLewakasCaptcha() {
+    if (!activeLewakasCaptcha) return;
+
+    if (!lewakasCaptchaSolved()) {
+        const failLine = randomFrom(LEWAKAS_CAPTCHA_FAIL_LINES, "No amoi probieren.");
+        refreshLewakasCaptcha(failLine);
+        return;
+    }
+
+    const action = pendingProtectedAction;
+    closeLewakasCaptcha(false);
+    pendingProtectedAction = null;
+    if (typeof action === "function") action();
+}
+
+function triggerStreakResetWithOptionalCaptcha() {
+    const captchaEnabled = Boolean(state.settings?.lewakasCaptchaEnabled);
+    if (!captchaEnabled) {
+        resetStreak();
+        showUndoSnackbar();
+        return;
+    }
+
+    pendingProtectedAction = () => {
+        resetStreak();
+        showUndoSnackbar();
+    };
+
+    openLewakasCaptcha().then((opened) => {
+        if (opened) return;
+        alert(LEWAKAS_CAPTCHA_MANIFEST_ERROR);
+        const action = pendingProtectedAction;
+        pendingProtectedAction = null;
+        if (typeof action === "function") action();
+    }).catch(() => {
+        alert(LEWAKAS_CAPTCHA_MANIFEST_ERROR);
+        const action = pendingProtectedAction;
+        pendingProtectedAction = null;
+        if (typeof action === "function") action();
+    });
+}
+
+function setupLewakasCaptchaControls() {
+    const toggle = $("lewakasCaptchaEnabled");
+    if (toggle) {
+        toggle.checked = Boolean(state.settings?.lewakasCaptchaEnabled);
+        toggle.addEventListener("change", (e) => {
+            state.settings.lewakasCaptchaEnabled = e.target.checked === true;
+            saveState();
+            render();
+        });
+    }
+
+    const infoBtn = $("lewakasCaptchaInfoBtn");
+    const infoTooltip = $("lewakasCaptchaInfoTooltip");
+    const closeInfoTooltip = () => {
+        if (!infoTooltip || !infoBtn) return;
+        infoTooltip.hidden = true;
+        infoBtn.setAttribute("aria-expanded", "false");
+    };
+
+    if (infoBtn && infoTooltip) {
+        infoBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const isOpen = !infoTooltip.hidden;
+            infoTooltip.hidden = isOpen;
+            infoBtn.setAttribute("aria-expanded", String(!isOpen));
+        });
+
+        document.addEventListener("click", (e) => {
+            if (infoTooltip.hidden) return;
+            if (e.target === infoBtn) return;
+            if (infoTooltip.contains(e.target)) return;
+            closeInfoTooltip();
+        });
+    }
+
+    const cancelBtn = $("lewakasCaptchaCancel");
+    if (cancelBtn) {
+        cancelBtn.addEventListener("click", () => {
+            closeLewakasCaptcha(true);
+        });
+    }
+
+    const confirmBtn = $("lewakasCaptchaConfirm");
+    if (confirmBtn) {
+        confirmBtn.addEventListener("click", () => {
+            confirmLewakasCaptcha();
+        });
+    }
+
+    const modal = $("lewakasCaptchaModal");
+    if (modal) {
+        modal.addEventListener("click", (e) => {
+            if (e.target === modal) closeLewakasCaptcha(true);
+        });
+    }
+
+    document.addEventListener("keydown", (e) => {
+        if (e.key !== "Escape") return;
+        closeInfoTooltip();
+        if (!$("lewakasCaptchaModal")?.hidden) closeLewakasCaptcha(true);
+    });
 }
 
 function setupTabs() {
@@ -634,6 +1010,10 @@ let state = loadState();
 let sinceLastTimer = null;
 let snackbarTimer = null;
 let lastRenderedDay = todayISO();
+let pendingProtectedAction = null;
+let activeLewakasCaptcha = null;
+let lewakasCaptchaPool = { real: [], fake: [] };
+let lewakasCaptchaPoolLoadPromise = null;
 
 window.addEventListener("load", () => {
     if ("serviceWorker" in navigator) {
@@ -641,6 +1021,7 @@ window.addEventListener("load", () => {
     }
 
     setupTabs();
+    setupLewakasCaptchaControls();
     syncBackupText();
 
     if (!sinceLastTimer) {
@@ -657,8 +1038,7 @@ window.addEventListener("load", () => {
     const btnResetStreak = $("btnResetStreak");
     if (btnResetStreak) {
         btnResetStreak.addEventListener("click", () => {
-            resetStreak();
-            showUndoSnackbar();
+            triggerStreakResetWithOptionalCaptcha();
         });
     }
 

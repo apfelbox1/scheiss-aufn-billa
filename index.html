@@ -158,12 +158,25 @@
 
             <section class="card">
                 <h2>Weitere Einstellungen</h2>
-                <label class="field">
+                <label class="field" for="firstDayOfWeek">
                     <span>Erster Tag der Woche</span>
                     <select id="firstDayOfWeek">
                         <option value="0">Sonntag</option>
                         <option value="1">Montag</option>
                     </select>
+                </label>
+                <label class="field" for="lewakasCaptchaEnabled">
+                    <div>
+                        <span>Lewakas Captcha</span>
+                        <button class="info-dot" id="lewakasCaptchaInfoBtn" type="button" aria-label="Info zu Lewakas Captcha" aria-expanded="false" aria-controls="lewakasCaptchaInfoTooltip">i</button>
+                        <div class="info-tooltip" id="lewakasCaptchaInfoTooltip" role="tooltip" hidden>
+                            Wenn aktiviert, musst du nach Drücken von "I hoss die oaschbude" zuerst ein Lewakas-Captcha lösen.
+                        </div>
+                    </div>
+                    <div class="switch">
+                        <input id="lewakasCaptchaEnabled" type="checkbox" />
+                        <span class="slider" aria-hidden="true"></span>
+                    </div>
                 </label>
             </section>
         </section>
@@ -179,6 +192,19 @@
     <div class="snackbar" id="undoSnackbar" role="status" aria-live="polite">
         <span id="snackbarText">Streak zurückgesetzt.</span>
         <button id="snackbarUndo" type="button">Rückgängig</button>
+    </div>
+
+    <div class="captcha-overlay" id="lewakasCaptchaModal" hidden>
+        <section class="captcha-dialog" role="dialog" aria-modal="true" aria-labelledby="lewakasCaptchaTitle">
+            <h2 id="lewakasCaptchaTitle">Wähle den echten Lewakas</h2>
+            <p class="micro captcha-help">Wähle alle Bilder, die echten Lewakas zeigen.</p>
+            <div class="captcha-grid" id="lewakasCaptchaGrid"></div>
+            <div class="captcha-error" id="lewakasCaptchaError" role="status" aria-live="polite"></div>
+            <div class="actions captcha-actions">
+                <button class="secondary" id="lewakasCaptchaCancel" type="button">Abbrechen</button>
+                <button class="btn primary" id="lewakasCaptchaConfirm" type="button">Bestätigen</button>
+            </div>
+        </section>
     </div>
 
     <script src="app.js"></script>
