@@ -2,6 +2,8 @@ const CACHE = "scheissaufnbilla-counter-v3";
 const ASSETS = [
     "./",
     "./index.html",
+    "./impressum.html",
+    "./bildnachweise.html",
     "./styles.css",
     "./app.js",
     "./manifest.json",

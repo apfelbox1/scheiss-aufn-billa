@@ -76,9 +76,13 @@ Beispiel `manifest.json`:
 ```
 
 
-## Attributions 
+## Bildnachweise 
 
 ### Verwendete Bilder
-lewakas-01.jpg
-- https://commons.wikimedia.org/wiki/File:Leberk%C3%A4sesemmel.jpg
-- Kobako, CC BY-SA 2.5 <https://creativecommons.org/licenses/by-sa/2.5>, via Wikimedia Commons
+
+#### lewakas-01.jpg
+**Name:** Leberkäsesemmel  
+Foto von **Kobako**  
+**Quelle**: https://commons.wikimedia.org/wiki/File:Leberk%C3%A4sesemmel.jpg  
+**Lizenz**: Creative Commons Attribution-ShareAlike 2.5 Generic (CC BY-SA 2.5)  
+Lizenzlink: https://creativecommons.org/licenses/by-sa/2.5/

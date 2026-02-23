@@ -462,6 +462,53 @@ h2 {
     margin: 10px 0;
 }
 
+.legal-page {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.legal-line {
+    margin: 0 0 8px;
+    line-height: 1.45;
+}
+
+.legal-links {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.legal-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    background: #fff;
+    color: #8f2618;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.legal-link:hover {
+    background: #fff7eb;
+}
+
+.credit-entry {
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    background: rgba(255, 255, 255, .86);
+}
+
+.credit-entry h3 {
+    margin: 0 0 10px;
+    color: #8e2617;
+    font-size: 16px;
+}
+
 .setting-toggle-row {
     margin-top: 14px;
     padding: 12px;
