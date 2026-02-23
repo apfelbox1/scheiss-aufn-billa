@@ -1,0 +1,7 @@
+{
+  "basePath": "img/captcha/lewakas",
+  "files": [
+    "real/lewakas-01.jpg",
+    "fake/ned-lewakas-02.jpg"
+  ]
+}

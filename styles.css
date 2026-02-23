@@ -748,6 +748,10 @@ canvas {
     );
 }
 
+.captcha-fallback[hidden] {
+    display: none !important;
+}
+
 .captcha-error {
     min-height: 20px;
     margin-top: 10px;

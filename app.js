@@ -1,7 +1,7 @@
 const $ = (id) => document.getElementById(id);
 
 const STORAGE_KEY = "nobilla-counter:v3";
-const LEGACY_STORAGE_KEYS = ["nobilla-counter:v2", "tschick-counter:v1"];
+const LEGACY_STORAGE_KEYS = ["nobilla-counter:v2"];
 
 const DEFAULT_STATE = {
     streak: {
@@ -106,8 +106,9 @@ const RELAPSE_SNACKBAR_LINES = [
 ];
 
 const LEWAKAS_CAPTCHA_TILE_COUNT = 9;
+const LEWAKAS_CAPTCHA_MIN_REAL_TILES = 1;
+const LEWAKAS_CAPTCHA_MAX_REAL_TILES = 4;
 const LEWAKAS_CAPTCHA_MANIFEST_PATH = "img/captcha/lewakas/manifest.json";
-const LEWAKAS_CAPTCHA_FALSE_PREFIX = "ned-";
 const LEWAKAS_CAPTCHA_FAIL_LINES = [
     "Heast, des war ka Lewakas. No amoi.",
     "Na geeeh, da hat di da Gusto verarscht.",
@@ -172,6 +173,21 @@ function shuffled(list) {
     return out;
 }
 
+function pickManyFromPool(pool, count) {
+    const n = Math.max(0, Math.floor(Number(count) || 0));
+    if (!Array.isArray(pool) || pool.length === 0 || n === 0) return [];
+
+    if (pool.length >= n) {
+        return shuffled(pool).slice(0, n);
+    }
+
+    const out = [...pool];
+    while (out.length < n) {
+        out.push(randomFrom(pool));
+    }
+    return shuffled(out);
+}
+
 function uniqueNonEmptyStrings(input) {
     if (!Array.isArray(input)) return [];
     const out = [];
@@ -196,10 +212,9 @@ function joinPath(basePath, entryPath) {
 
 function captchaTypeFromPath(entryPath) {
     const normalized = String(entryPath || "").toLowerCase();
-    const name = normalized.split("/").pop() || "";
-    if (normalized.includes("/fake/")) return "fake";
-    if (normalized.includes("/real/")) return "real";
-    return name.startsWith(LEWAKAS_CAPTCHA_FALSE_PREFIX) ? "fake" : "real";
+    if (/(^|\/)fake\//.test(normalized)) return "fake";
+    if (/(^|\/)real\//.test(normalized)) return "real";
+    return null;
 }
 
 function normalizeLewakasCaptchaManifest(manifest) {
@@ -221,9 +236,10 @@ function normalizeLewakasCaptchaManifest(manifest) {
 
     for (const path of uniqueNonEmptyStrings(obj.files)) {
         const fullPath = joinPath(basePath, path);
-        if (captchaTypeFromPath(path) === "fake") {
+        const type = captchaTypeFromPath(path);
+        if (type === "fake") {
             fake.push(fullPath);
-        } else {
+        } else if (type === "real") {
             real.push(fullPath);
         }
     }
@@ -714,25 +730,23 @@ function createLewakasCaptchaChallenge() {
     const fakePool = lewakasCaptchaPool.fake;
     if (realPool.length === 0 || fakePool.length === 0) return null;
 
-    const realCount = randomInt(2, 4);
-    const wrongCount = Math.max(1, LEWAKAS_CAPTCHA_TILE_COUNT - realCount);
-    const tiles = [];
-
-    for (let i = 0; i < realCount; i += 1) {
-        tiles.push({
+    const maxRealByGrid = Math.max(1, LEWAKAS_CAPTCHA_TILE_COUNT - 1);
+    const realMin = Math.min(LEWAKAS_CAPTCHA_MIN_REAL_TILES, maxRealByGrid);
+    const realMax = Math.min(LEWAKAS_CAPTCHA_MAX_REAL_TILES, maxRealByGrid);
+    const realCount = randomInt(realMin, realMax);
+    const wrongCount = LEWAKAS_CAPTCHA_TILE_COUNT - realCount;
+    const tiles = [
+        ...pickManyFromPool(realPool, realCount).map((src) => ({
             isReal: true,
-            src: randomFrom(realPool),
+            src,
             fallbackLabel: "Lewakas"
-        });
-    }
-
-    for (let i = 0; i < wrongCount; i += 1) {
-        tiles.push({
+        })),
+        ...pickManyFromPool(fakePool, wrongCount).map((src) => ({
             isReal: false,
-            src: randomFrom(fakePool),
+            src,
             fallbackLabel: "Ned"
-        });
-    }
+        }))
+    ];
 
     const mixedTiles = shuffled(tiles).slice(0, LEWAKAS_CAPTCHA_TILE_COUNT);
     const correctIndexes = new Set();
