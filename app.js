@@ -1,5 +1,6 @@
 const $ = (id) => document.getElementById(id);
 
+const APP_VERSION = "2.0";
 const STORAGE_KEY = "nobilla-counter:v3";
 const LEGACY_STORAGE_KEYS = ["nobilla-counter:v2"];
 
@@ -971,6 +972,215 @@ function setupLewakasCaptchaControls() {
     });
 }
 
+const VIENNA_MAP_CENTER = [48.2082, 16.3738];
+let supermarketMap = null;
+let supermarketLayer = null;
+let userLocationMarker = null;
+let mapHasLoaded = false;
+let mapSearchToken = 0;
+
+function setMapStatus(message) {
+    const status = $("mapStatus");
+    if (status) status.textContent = message;
+}
+
+function initializeSupermarketMap() {
+    if (supermarketMap) return true;
+    if (!window.L) {
+        setMapStatus("Die Kartenbibliothek konnte nicht geladen werden.");
+        return false;
+    }
+
+    supermarketMap = L.map("supermarketMap").setView(VIENNA_MAP_CENTER, 13);
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap-Mitwirkende</a>'
+    }).addTo(supermarketMap);
+    supermarketLayer = L.layerGroup().addTo(supermarketMap);
+    return true;
+}
+
+function getCurrentMapPosition() {
+    return new Promise((resolve) => {
+        if (!navigator.geolocation) {
+            resolve(null);
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            ({ coords }) => resolve([coords.latitude, coords.longitude]),
+            () => resolve(null),
+            { enableHighAccuracy: false, maximumAge: 300000, timeout: 8000 }
+        );
+    });
+}
+
+function createSupermarketPopup(element) {
+    const tags = element.tags || {};
+    const popup = document.createElement("div");
+    const name = document.createElement("strong");
+    const originalName = tags.name || tags.brand || "Supermarkt";
+    const isBilla = /billa/i.test(`${tags.name || ""} ${tags.brand || ""}`);
+    name.textContent = isBilla ? "oaschbude" : originalName;
+    popup.appendChild(name);
+
+    const street = [tags["addr:street"], tags["addr:housenumber"]].filter(Boolean).join(" ");
+    if (street) {
+        const address = document.createElement("div");
+        address.textContent = street;
+        popup.appendChild(address);
+    }
+
+    const link = document.createElement("a");
+    link.href = `https://www.openstreetmap.org/${encodeURIComponent(element.type)}/${encodeURIComponent(element.id)}`;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.textContent = "In OpenStreetMap öffnen";
+    popup.appendChild(link);
+    return popup;
+}
+
+function distanceBetweenPoints(first, second) {
+    const radians = (degrees) => degrees * Math.PI / 180;
+    const [firstLat, firstLon] = first.map(radians);
+    const [secondLat, secondLon] = second.map(radians);
+    const latDelta = secondLat - firstLat;
+    const lonDelta = secondLon - firstLon;
+    const haversine = Math.sin(latDelta / 2) ** 2
+        + Math.cos(firstLat) * Math.cos(secondLat) * Math.sin(lonDelta / 2) ** 2;
+    return 6371000 * 2 * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
+}
+
+function renderNearbySupermarkets(supermarkets, center, unavailable = false) {
+    const list = $("nearbySupermarkets");
+    if (!list) return;
+    list.replaceChildren();
+
+    const nearest = supermarkets
+        .filter((market) => !/billa/i.test(`${market.tags.name || ""} ${market.tags.brand || ""}`))
+        .map((market) => ({ ...market, distance: distanceBetweenPoints(center, market.position) }))
+        .sort((first, second) => first.distance - second.distance)
+        .slice(0, 5);
+
+    if (!nearest.length) {
+        const empty = document.createElement("li");
+        empty.className = "nearby-empty";
+        empty.textContent = unavailable
+            ? "Die Supermarkt-Liste konnte gerade nicht geladen werden."
+            : "Keine anderen Supermärkte in der Umgebung gefunden.";
+        list.appendChild(empty);
+        return;
+    }
+
+    nearest.forEach((market) => {
+        const item = document.createElement("li");
+        item.className = "nearby-market";
+
+        const details = document.createElement("div");
+        details.className = "nearby-market-details";
+        const name = document.createElement("strong");
+        name.textContent = market.tags.name || market.tags.brand || "Supermarkt";
+        details.appendChild(name);
+
+        const distance = document.createElement("span");
+        distance.className = "nearby-market-distance";
+        distance.textContent = market.distance < 1000
+            ? `${Math.round(market.distance)} m`
+            : `${(market.distance / 1000).toFixed(1)} km`;
+        details.appendChild(distance);
+
+        const street = [market.tags["addr:street"], market.tags["addr:housenumber"]].filter(Boolean).join(" ");
+        if (street) {
+            const address = document.createElement("span");
+            address.className = "nearby-market-address";
+            address.textContent = street;
+            details.appendChild(address);
+        }
+        item.appendChild(details);
+
+        const route = document.createElement("a");
+        route.className = "nearby-route";
+        route.href = `https://www.google.com/maps/dir/?api=1&destination=${market.position[0]},${market.position[1]}`;
+        route.target = "_blank";
+        route.rel = "noopener noreferrer";
+        route.textContent = "Route";
+        route.setAttribute("aria-label", `Route zu ${market.tags.name || market.tags.brand || "Supermarkt"} in Google Maps`);
+        item.appendChild(route);
+        list.appendChild(item);
+    });
+}
+
+async function refreshSupermarkets() {
+    const searchToken = ++mapSearchToken;
+    if (!initializeSupermarketMap()) return;
+
+    setMapStatus("Standort wird ermittelt …");
+    const currentPosition = await getCurrentMapPosition();
+    if (searchToken !== mapSearchToken) return;
+
+    const center = currentPosition || VIENNA_MAP_CENTER;
+    supermarketMap.setView(center, 14);
+    supermarketLayer.clearLayers();
+    if (userLocationMarker) userLocationMarker.remove();
+    if (currentPosition) {
+        userLocationMarker = L.circleMarker(center, {
+            radius: 8,
+            color: "#ffffff",
+            weight: 3,
+            fillColor: "#2878c8",
+            fillOpacity: 1
+        }).addTo(supermarketMap).bindPopup("Dein Standort");
+    }
+
+    setMapStatus("Suche Supermärkte in der Nähe …");
+    const query = `[out:json][timeout:20];(node["shop"="supermarket"](around:5000,${center[0]},${center[1]});way["shop"="supermarket"](around:5000,${center[0]},${center[1]});relation["shop"="supermarket"](around:5000,${center[0]},${center[1]}););out center tags;`;
+
+    try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 25000);
+        let response;
+        try {
+            response = await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`, {
+                signal: controller.signal,
+                headers: { Accept: "application/json" }
+            });
+        } finally {
+            clearTimeout(timeout);
+        }
+        if (!response.ok) throw new Error("Overpass request failed");
+
+        const result = await response.json();
+        if (searchToken !== mapSearchToken) return;
+        supermarketLayer.clearLayers();
+        const supermarkets = (result.elements || []).flatMap((element) => {
+            const latitude = element.lat ?? element.center?.lat;
+            const longitude = element.lon ?? element.center?.lon;
+            if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return [];
+            const position = [latitude, longitude];
+            const isBilla = /billa/i.test(`${element.tags?.name || ""} ${element.tags?.brand || ""}`);
+            const marker = isBilla
+                ? L.marker(position, { icon: L.divIcon({ className: "billa-map-marker", html: '<span aria-hidden="true"></span>', iconSize: [28, 36], iconAnchor: [14, 34], popupAnchor: [0, -32] }) })
+                : L.marker(position);
+            marker.bindPopup(createSupermarketPopup(element)).addTo(supermarketLayer);
+            return [{ ...element, position }];
+        });
+
+        renderNearbySupermarkets(supermarkets, center);
+        mapHasLoaded = true;
+        const locationLabel = currentPosition ? "deiner Umgebung" : "Wien (Standardstandort)";
+        setMapStatus(supermarkets.length
+            ? `${supermarkets.length} Supermärkte in ${locationLabel} · Umkreis 5 km`
+            : `Keine Supermärkte gefunden · ${locationLabel}`);
+    } catch {
+        if (searchToken !== mapSearchToken) return;
+        mapHasLoaded = true;
+        renderNearbySupermarkets([], center, true);
+        setMapStatus(currentPosition
+            ? "Supermärkte konnten gerade nicht geladen werden."
+            : "Standort nicht verfügbar; Karte zeigt Wien. Supermärkte konnten gerade nicht geladen werden.");
+    }
+}
+
 function setupTabs() {
     const tabs = Array.from(document.querySelectorAll(".tab"));
     const views = Array.from(document.querySelectorAll(".tab-view"));
@@ -978,16 +1188,29 @@ function setupTabs() {
     const setActiveTab = (tabId) => {
         tabs.forEach((tab) => {
             tab.classList.toggle("active", tab.dataset.tab === tabId);
+            if (tab.dataset.tab === tabId) tab.setAttribute("aria-current", "page");
+            else tab.removeAttribute("aria-current");
         });
 
         views.forEach((view) => {
             view.classList.toggle("active", view.dataset.view === tabId);
         });
+
+        if (tabId === "map") {
+            requestAnimationFrame(() => {
+                if (!initializeSupermarketMap()) return;
+                supermarketMap.invalidateSize();
+                if (!mapHasLoaded) void refreshSupermarkets();
+            });
+        }
     };
 
     tabs.forEach((tab) => {
         tab.addEventListener("click", () => setActiveTab(tab.dataset.tab));
     });
+
+    const locateButton = $("btnLocateMap");
+    if (locateButton) locateButton.addEventListener("click", () => void refreshSupermarkets());
 }
 
 function syncBackupText() {
@@ -1030,6 +1253,9 @@ let lewakasCaptchaPool = { real: [], fake: [] };
 let lewakasCaptchaPoolLoadPromise = null;
 
 window.addEventListener("load", () => {
+    const appVersion = $("appVersion");
+    if (appVersion) appVersion.textContent = APP_VERSION;
+
     if ("serviceWorker" in navigator) {
         navigator.serviceWorker.register("./sw.js").catch(() => { });
     }

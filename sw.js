@@ -1,14 +1,18 @@
-const CACHE = "scheissaufnbilla-counter-v3";
+const CACHE = "scheissaufnbilla-counter-v9";
 const ASSETS = [
     "./",
     "./index.html",
     "./impressum.html",
+    "./datenschutz.html",
     "./bildnachweise.html",
     "./styles.css",
     "./app.js",
     "./manifest.json",
     "./img/captcha/lewakas/manifest.json",
     "./icons/app_icon.png",
+    "./icons/app_icon_192.png",
+    "./icons/app_icon_512.png",
+    "./icons/app_icon_maskable.png",
     "./icons/reddit_logo.png"
 ];
 
@@ -27,6 +31,7 @@ self.addEventListener("activate", (e) => {
 self.addEventListener("fetch", (e) => {
     const req = e.request;
     if (req.method !== "GET") return;
+    if (new URL(req.url).origin !== self.location.origin) return;
 
     e.respondWith(
         caches.match(req).then(hit => hit || fetch(req).then(res => {

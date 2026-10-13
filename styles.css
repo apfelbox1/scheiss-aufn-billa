@@ -266,6 +266,16 @@ button {
     padding: 16px;
 }
 
+.card .btn-container {
+    width: 100%;
+}
+
+.card .btn-container a {
+    width: 100%;
+    font-size: 1.4em !important;
+    padding: 20px !important;
+}
+
 h2 {
     margin: 0 0 10px;
     font-size: 16px;
@@ -479,6 +489,13 @@ h2 {
     gap: 10px;
 }
 
+.app-version {
+    margin: 14px 0 0;
+    color: var(--muted);
+    font-size: 12px;
+    text-align: center;
+}
+
 .legal-link {
     display: inline-flex;
     align-items: center;
@@ -646,25 +663,30 @@ canvas {
 
 .tabbar {
     position: fixed;
-    left: 12px;
-    right: 12px;
-    bottom: calc(12px + env(safe-area-inset-bottom));
+    left: 0;
+    right: 0;
+    bottom: 0;
     z-index: 40;
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 8px;
-    padding: 8px;
-    border: 1px solid var(--line);
-    border-radius: 18px;
+    gap: 0;
+    padding: 7px 8px calc(7px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--line);
     background: rgba(255, 255, 255, .96);
     -webkit-backdrop-filter: blur(14px);
     backdrop-filter: blur(14px);
-    box-shadow: var(--shadow);
+    box-shadow: 0 -5px 18px rgba(124, 63, 24, .12);
 }
 
 .tab {
-    border-radius: 12px;
-    padding: 11px 6px;
+    min-height: 54px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    border-radius: 10px;
+    padding: 5px 4px;
     font-size: 12px;
     text-align: center;
     color: #944a1f;
@@ -672,10 +694,174 @@ canvas {
     border: 1px solid transparent;
 }
 
+.tab svg {
+    width: 23px;
+    height: 23px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
 .tab.active {
-    color: #fff;
-    background: linear-gradient(180deg, #ff3f28, #db2112);
-    border-color: rgba(184, 39, 21, .5);
+    color: #d52b19;
+    background: rgba(255, 208, 40, .2);
+}
+
+.map-view {
+    min-height: calc(100dvh - 170px);
+}
+
+.map-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.map-heading h1 {
+    margin: 0;
+    color: #8e2617;
+    font-family: var(--font-display);
+    font-size: 30px;
+    line-height: 1;
+}
+
+.map-heading .micro {
+    margin: 5px 0 0;
+}
+
+.map-locate {
+    width: 44px;
+    height: 44px;
+    flex: 0 0 44px;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    color: #8e2617;
+    background: rgba(255, 255, 255, .9);
+}
+
+.map-locate svg {
+    width: 22px;
+    height: 22px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.supermarket-map {
+    width: 100%;
+    height: min(68dvh, 680px);
+    min-height: 360px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: #e9eee4;
+    isolation: isolate;
+}
+
+.nearby-section h2 {
+    margin: 2px 0 8px;
+}
+
+.nearby-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.nearby-market {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--line);
+}
+
+.nearby-market:last-child {
+    border-bottom: 0;
+}
+
+.nearby-market-details {
+    min-width: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: baseline;
+    gap: 2px 10px;
+}
+
+.nearby-market-details strong {
+    overflow-wrap: anywhere;
+}
+
+.nearby-market-distance,
+.nearby-market-address {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.nearby-market-address {
+    grid-column: 1 / -1;
+}
+
+.nearby-route {
+    flex: 0 0 auto;
+    padding: 8px 12px;
+    border: 1px solid rgba(207, 148, 28, .4);
+    border-radius: 8px;
+    color: #54260f;
+    background: #ffe9aa;
+    font-size: 13px;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.nearby-route:hover {
+    background: #ffd769;
+}
+
+.nearby-empty {
+    padding: 12px 0;
+    color: var(--muted);
+    font-size: 14px;
+}
+
+.billa-map-marker {
+    border: 0;
+    background: transparent;
+}
+
+.billa-map-marker span {
+    position: absolute;
+    left: 5px;
+    top: 2px;
+    width: 22px;
+    height: 22px;
+    border: 2px solid #fff;
+    border-radius: 50% 50% 50% 0;
+    background: #df241b;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, .4);
+    transform: rotate(-45deg);
+}
+
+.billa-map-marker span::after {
+    position: absolute;
+    inset: 6px;
+    border-radius: 50%;
+    background: #fff;
+    content: "";
+}
+
+.map-note {
+    margin: -8px 0 0;
+    color: var(--muted);
+    font-size: 11px;
 }
 
 .snackbar {

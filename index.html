@@ -4,10 +4,11 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#0b0f14" />
+    <meta name="theme-color" content="#ffd028" />
     <link rel="manifest" href="manifest.json" />
-    <link rel="icon" type="image/png" href="icons/app_icon.png" />
-    <link rel="apple-touch-icon" href="icons/app_icon.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/app_icon_192.png" />
+    <link rel="apple-touch-icon" href="icons/app_icon_192.png" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="styles.css" />
     <title>Scheiss auf'n Billa</title>
 </head>
@@ -22,9 +23,11 @@
     <main class="container">
         <section class="tab-view active" id="view-home" data-view="home">
             <div class="home-wrap">
-                <a class="reddit-link" href="https://www.reddit.com/r/scheissaufnbilla/" target="_blank" rel="noopener noreferrer" aria-label="r/scheissaufnbilla auf Reddit öffnen">
+                <a class="reddit-link" href="https://www.reddit.com/r/scheissaufnbilla/" target="_blank"
+                    rel="noopener noreferrer" aria-label="r/scheissaufnbilla auf Reddit öffnen">
                     <svg class="reddit-icon" viewBox="0 0 24 24" aria-hidden="true">
-                        <path fill="currentColor" d="M14.2 15.9c.1.1.1.3 0 .4c-.6.6-1.5 1-2.5 1s-1.9-.4-2.5-1c-.1-.1-.1-.3 0-.4c.1-.1.3-.1.4 0c.5.5 1.3.8 2.1.8s1.6-.3 2.1-.8c.1-.1.3-.1.4 0Zm-3.9-2.2c0-.6-.4-1-1-1s-1 .4-1 1s.4 1 1 1s1-.4 1-1Zm4.4-1c-.6 0-1 .4-1 1s.4 1 1 1s1-.4 1-1s-.4-1-1-1Zm6.6-.8c0-1.2-1-2.2-2.2-2.2c-.6 0-1.2.3-1.6.7c-1.5-1-3.4-1.7-5.4-1.8l1-3.3l2.8.7a1.6 1.6 0 1 0 .2-.8l-3.2-.8c-.2-.1-.4.1-.5.3l-1.1 3.7c-2.1.1-4 .8-5.5 1.8c-.4-.4-1-.7-1.6-.7c-1.2 0-2.2 1-2.2 2.2c0 .9.5 1.6 1.3 2c0 .3-.1.6-.1.9c0 3.1 3.4 5.6 7.5 5.6s7.5-2.5 7.5-5.6c0-.3 0-.6-.1-.9c.8-.4 1.3-1.1 1.3-2Z" />
+                        <path fill="currentColor"
+                            d="M14.2 15.9c.1.1.1.3 0 .4c-.6.6-1.5 1-2.5 1s-1.9-.4-2.5-1c-.1-.1-.1-.3 0-.4c.1-.1.3-.1.4 0c.5.5 1.3.8 2.1.8s1.6-.3 2.1-.8c.1-.1.3-.1.4 0Zm-3.9-2.2c0-.6-.4-1-1-1s-1 .4-1 1s.4 1 1 1s1-.4 1-1Zm4.4-1c-.6 0-1 .4-1 1s.4 1 1 1s1-.4 1-1s-.4-1-1-1Zm6.6-.8c0-1.2-1-2.2-2.2-2.2c-.6 0-1.2.3-1.6.7c-1.5-1-3.4-1.7-5.4-1.8l1-3.3l2.8.7a1.6 1.6 0 1 0 .2-.8l-3.2-.8c-.2-.1-.4.1-.5.3l-1.1 3.7c-2.1.1-4 .8-5.5 1.8c-.4-.4-1-.7-1.6-.7c-1.2 0-2.2 1-2.2 2.2c0 .9.5 1.6 1.3 2c0 .3-.1.6-.1.9c0 3.1 3.4 5.6 7.5 5.6s7.5-2.5 7.5-5.6c0-.3 0-.6-.1-.9c.8-.4 1.3-1.1 1.3-2Z" />
                     </svg>
                     <span>r/scheissaufnbilla</span>
                 </a>
@@ -44,7 +47,8 @@
                 </div>
 
                 <div class="home-controls">
-                    <button class="btn reset" id="btnResetStreak" aria-label="Streak zurücksetzen">I hoss die oaschbude</button>
+                    <button class="btn reset" id="btnResetStreak" aria-label="Streak zurücksetzen">I hoss die
+                        oaschbude</button>
                 </div>
 
                 <div class="hint">Wenn du aus Versehen tippst, kannst du kurz danach rückgängig machen.</div>
@@ -80,7 +84,44 @@
             </div>
         </section>
 
-        <section class="tab-view" id="view-stats" data-view="stats">
+        <section class="tab-view map-view" id="view-map" data-view="map">
+            <div class="map-heading">
+                <div>
+                    <h1>Map</h1>
+                    <p class="micro" id="mapStatus" role="status" aria-live="polite">Karte wird vorbereitet …</p>
+                </div>
+                <button class="map-locate" id="btnLocateMap" type="button" aria-label="Standort aktualisieren"
+                    title="Standort aktualisieren">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="12" r="8" />
+                        <circle cx="12" cy="12" r="2.5" />
+                        <path d="M12 2v2M12 20v2M2 12h2M20 12h2" />
+                    </svg>
+                </button>
+            </div>
+            <div id="supermarketMap" class="supermarket-map" role="region"
+                aria-label="Karte mit umliegenden Supermärkten"></div>
+            <section class="nearby-section" aria-labelledby="nearbyTitle">
+                <h2 id="nearbyTitle">Die 5 nächsten Supermärkte</h2>
+                <ol class="nearby-list" id="nearbySupermarkets" aria-live="polite">
+                    <li class="nearby-empty">Supermärkte werden geladen …</li>
+                </ol>
+            </section>
+            <p class="map-note">Bei erlaubtem Standort werden Koordinaten zur Umkreissuche an OpenStreetMap Overpass
+                übermittelt.</p>
+        </section>
+
+        <section class="tab-view" id="view-badges" data-view="badges">
+            <section class="card">
+                <h2>Badges</h2>
+                <div class="badges" id="badges"></div>
+                <div class="micro" id="badgeRequirementText">Tippe auf einen gesperrten Badge, um die
+                    Freischalt-Bedingung zu sehen.</div>
+                <div class="micro">Badges werden lokal freigeschaltet – keine Cloud.</div>
+            </section>
+        </section>
+
+        <section class="tab-view" id="view-settings" data-view="settings">
             <section class="card">
                 <h2>Statistiken</h2>
                 <div class="stats">
@@ -116,18 +157,7 @@
                     <div class="m" id="resetTopWeekdayMeta">Noch keine Rückfälle</div>
                 </div>
             </section>
-        </section>
 
-        <section class="tab-view" id="view-badges" data-view="badges">
-            <section class="card">
-                <h2>Badges</h2>
-                <div class="badges" id="badges"></div>
-                <div class="micro" id="badgeRequirementText">Tippe auf einen gesperrten Badge, um die Freischalt-Bedingung zu sehen.</div>
-                <div class="micro">Badges werden lokal freigeschaltet – keine Cloud.</div>
-            </section>
-        </section>
-
-        <section class="tab-view" id="view-settings" data-view="settings">
             <section class="card">
                 <h2>Quick Actions</h2>
                 <div class="actions">
@@ -156,6 +186,7 @@
                 <button class="btn primary" id="btnImportText">Aus Text importieren</button>
             </section>
 
+
             <section class="card">
                 <h2>Weitere Einstellungen</h2>
                 <label class="field" for="firstDayOfWeek">
@@ -168,9 +199,12 @@
                 <label class="field" for="lewakasCaptchaEnabled">
                     <div>
                         <span>Lewakas Captcha</span>
-                        <button class="info-dot" id="lewakasCaptchaInfoBtn" type="button" aria-label="Info zu Lewakas Captcha" aria-expanded="false" aria-controls="lewakasCaptchaInfoTooltip">i</button>
+                        <button class="info-dot" id="lewakasCaptchaInfoBtn" type="button"
+                            aria-label="Info zu Lewakas Captcha" aria-expanded="false"
+                            aria-controls="lewakasCaptchaInfoTooltip">i</button>
                         <div class="info-tooltip" id="lewakasCaptchaInfoTooltip" role="tooltip" hidden>
-                            Wenn aktiviert, musst du nach Drücken von "I hoss die oaschbude" zuerst ein Lewakas-Captcha lösen.
+                            Wenn aktiviert, musst du nach Drücken von "I hoss die oaschbude" zuerst ein Lewakas-Captcha
+                            lösen.
                         </div>
                     </div>
                     <div class="switch">
@@ -181,20 +215,47 @@
             </section>
 
             <section class="card">
+                <h2>Unterstützen</h2>
+                <script type='text/javascript' src='https://storage.ko-fi.com/cdn/widget/Widget_2.js'></script>
+                <script type='text/javascript'>kofiwidget2.init('A klane Kaffeespende', '#72a4f2', 'W8U828Q3C5'); kofiwidget2.draw();</script>
+            </section>
+
+            <section class="card">
                 <h2>Rechtliches</h2>
                 <div class="legal-links">
                     <a class="legal-link" href="impressum.html">Impressum</a>
+                    <a class="legal-link" href="datenschutz.html">Datenschutzerklärung</a>
                     <a class="legal-link" href="bildnachweise.html">Bildnachweise</a>
                 </div>
+                <p class="app-version">Version <span id="appVersion">2.0</span></p>
             </section>
         </section>
     </main>
 
     <nav class="tabbar" aria-label="Hauptnavigation">
-        <button class="tab active" data-tab="home" aria-label="Hauptseite">Hauptseite</button>
-        <button class="tab" data-tab="stats" aria-label="Statistik">Statistik</button>
-        <button class="tab" data-tab="badges" aria-label="Badges">Badges</button>
-        <button class="tab" data-tab="settings" aria-label="Einstellungen">Einstellungen</button>
+        <button class="tab active" type="button" data-tab="home" aria-label="Hauptseite" aria-current="page">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z" />
+            </svg><span>Home</span>
+        </button>
+        <button class="tab" type="button" data-tab="map" aria-label="Map">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3zM9 3v15M15 6v15" />
+            </svg><span>Map</span>
+        </button>
+        <button class="tab" type="button" data-tab="badges" aria-label="Badges">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="8" r="6" />
+                <path d="m8.2 13-1.2 9 5-3 5 3-1.2-9" />
+            </svg><span>Badges</span>
+        </button>
+        <button class="tab" type="button" data-tab="settings" aria-label="Einstellungen">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z" />
+                <path
+                    d="m19.4 15 .1.1 1.4 1.1-1.4 2.4-1.7-.7a8 8 0 0 1-1.6.9L16 20.5h-8l-.2-1.7a8 8 0 0 1-1.6-.9l-1.7.7-1.4-2.4 1.4-1.1A8 8 0 0 1 4.4 13l-1.5-1.1 1.4-2.4 1.8.6a8 8 0 0 1 1.5-.9L8 7.5h8l.2 1.7a8 8 0 0 1 1.6.9l1.7-.7 1.4 2.4-1.4 1.1a8 8 0 0 1-.1 2.1Z" />
+            </svg><span>Einstell.</span>
+        </button>
     </nav>
 
     <div class="snackbar" id="undoSnackbar" role="status" aria-live="polite">
@@ -215,6 +276,7 @@
         </section>
     </div>
 
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="app.js"></script>
 </body>
 

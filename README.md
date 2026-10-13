@@ -1,4 +1,6 @@
 # scheiss-aufn-billa - Die App
+Aktuelle App-Version: **2.0**
+
 ## Allgemein
 Ein satirisches Open-Source-Kunstprojekt und zugleich ein minimalistischer Web-Counter.
 
@@ -11,6 +13,7 @@ Die App bietet aktuell
   - durchhalten
   - weitermachen
   - rückfällig werden
+- interaktive Karte mit umliegenden Supermärkten
 - ein optionalas Lewakas Captcha
 - eine Prise österreichischen Grant
 - 100% Open Source
@@ -19,6 +22,10 @@ Das Projekt versteht sich als digitale Satire und künstlerischer Kommentar zum 
 
 Es besteht keinerlei Verbindung zu jeglichen Supermärkten, Marken oder anderen Handelsunternehmen.
 Alles ist mit Humor zu verstehen.
+
+### Karte
+
+Die Karte verwendet Leaflet und OpenStreetMap-Kacheln. Supermärkte werden ohne API-Schlüssel über die öffentliche Overpass API gesucht. Bei erlaubtem Standort wird die Position für diese Suche an Overpass übermittelt; wenn kein Standort verfügbar ist, wird Wien als Kartenmittelpunkt verwendet. Die Kartenansicht benötigt eine Internetverbindung.
 
 Verfügbar im Web unter: [Scheiss aufn BILLA](https://apfelbox1.github.io/scheiss-aufn-billa/)
 
